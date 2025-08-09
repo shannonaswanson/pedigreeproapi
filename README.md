@@ -89,7 +89,7 @@ Search for dogs with advanced filtering, pagination, and sorting capabilities.
 ```bash
 curl -X POST http://localhost:5001/search \
   -H "Content-Type: application/json" \
-  -d '{"name": "Fido", "breed": "Labrador", "page": 1, "pageSize": 25}'
+  -d '{"name": "Moon Fairy", "breed": "Border Collie", "page": 1, "pageSize": 25}'
 ```
 
 ### GET /pedigree
@@ -132,7 +132,7 @@ Returns a hierarchical array representing the pedigree tree:
 
 **Example:**
 ```bash
-curl -X GET "http://localhost:5001/pedigree?_id=507f1f77bcf86cd799439011"
+curl -X GET "http://localhost:5001/pedigree?_id=6856cc40f9a8bfcbe4b7b0b3"
 ```
 
 ## Development
