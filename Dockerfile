@@ -3,8 +3,7 @@ FROM python:3.12-slim AS base
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
-    APP_HOME=/app \
-    PORT=5001
+    APP_HOME=/app
 
 WORKDIR $APP_HOME
 
@@ -21,8 +20,9 @@ COPY . .
 RUN useradd -m appuser && chown -R appuser:appuser $APP_HOME
 USER appuser
 
-EXPOSE 5001
+EXPOSE 8080
 
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s CMD curl -f http://localhost:${PORT}/hello || exit 1
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s CMD curl -f http://localhost:${PORT:-8080}/hello || exit 1
 
-CMD ["gunicorn", "--bind", "0.0.0.0:5001", "--workers", "3", "--threads", "4", "--timeout", "120", "app:app"]
+# Cloud Run sets PORT (default 8080). Use that when launching gunicorn; fall back to 8080 locally if unset.
+CMD ["bash", "-c", "gunicorn --bind 0.0.0.0:${PORT:-8080} --workers 3 --threads 4 --timeout 120 app:app"]
