@@ -48,6 +48,77 @@ A Python Flask REST API for managing dog pedigree data with MongoDB cloud integr
 
 The API will be available at `http://localhost:5001`
 
+## Docker
+
+You can run the API in Docker (recommended for parity between local and Cloud Run deployment).
+
+### Build
+```bash
+docker build -t pedigreeproapi:latest .
+```
+
+### Run
+```bash
+docker run -p 5001:5001 \
+  -e MONGODB_URI="mongodb+srv://username:password@cluster.mongodb.net/database" \
+  pedigreeproapi:latest
+```
+
+Visit: http://localhost:5001/hello
+
+### Using a .env File
+Create a local `.env.runtime` (avoid naming it exactly `.env` if ignored) and load it:
+```bash
+docker run --env-file .env.runtime -p 5001:5001 pedigreeproapi:latest
+```
+
+## Deploying to Google Cloud Run
+
+1. Enable required services (one-time):
+```bash
+gcloud services enable run.googleapis.com artifactregistry.googleapis.com
+```
+2. Create an Artifact Registry repository (one-time):
+```bash
+gcloud artifacts repositories create pedigree-repo \
+  --repository-format=docker \
+  --location=us-central1 \
+  --description="Pedigree Pro API images"
+```
+3. Configure auth for Docker:
+```bash
+gcloud auth configure-docker us-central1-docker.pkg.dev
+```
+4. Build & tag image:
+```bash
+PROJECT_ID=$(gcloud config get-value project)
+docker build -t us-central1-docker.pkg.dev/$PROJECT_ID/pedigree-repo/pedigreeproapi:latest .
+```
+5. Push image:
+```bash
+docker push us-central1-docker.pkg.dev/$PROJECT_ID/pedigree-repo/pedigreeproapi:latest
+```
+6. Deploy to Cloud Run:
+```bash
+gcloud run deploy pedigreeproapi \
+  --image us-central1-docker.pkg.dev/$PROJECT_ID/pedigree-repo/pedigreeproapi:latest \
+  --region us-central1 \
+  --platform managed \
+  --allow-unauthenticated \
+  --set-env-vars MONGODB_URI="mongodb+srv://username:password@cluster.mongodb.net/database" \
+  --port 5001
+```
+7. Test the deployed service (replace SERVICE_URL):
+```bash
+curl "$SERVICE_URL/hello"
+```
+
+### Notes
+* Gunicorn serves the app with 3 workers, adjust based on CPU allocated.
+* Health endpoint: `/hello` (used by Docker healthcheck).
+* For secrets, prefer using Google Secret Manager and `--set-secrets` flag.
+* Scale settings can be adjusted using flags: `--min-instances`, `--max-instances`.
+
 ## API Endpoints
 
 ### POST /search

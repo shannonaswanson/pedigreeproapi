@@ -325,4 +325,6 @@ def get_dogs():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=int(os.getenv("PORT", 5001)))
+    # Respect PORT environment variable (Cloud Run supplies this). Default to 5001 for local dev.
+    port = int(os.getenv("PORT", 5001))
+    app.run(debug=True, port=port, host="0.0.0.0")
