@@ -1,0 +1,121 @@
+# ------------------------------
+# Python / Flask Standard Ignore
+# ------------------------------
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+cover/
+
+# mypy / type checking
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Ruff / lint caches
+.ruff_cache/
+
+# Pyre type checker
+.pyre/
+
+# Cython debug symbols
+cython_debug/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# PyCharm / VS Code / other IDEs & editors
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+.env/
+
+# If you use a directory named `.env` for your virtualenv, it will be ignored.
+# For an environment variables file, prefer naming it `.env.local` (also ignored below) to avoid accidental commits.
+
+# Environment variable / secrets files
+.env
+.env.*
+!example.env
+
+# Flask specific
+instance/
+*.db
+*.sqlite3
+
+# Logs
+*.log
+logs/
+
+# MacOS / OS artifacts
+.DS_Store
+Thumbs.db
+
+# Python version / build metadata
+.python-version
+pip-wheel-metadata/
+
+# Cache & temp
+tmp/
+temp/
+
+# Coverage tooling
+.hypothesis/
+
+# Generated documentation
+docs/_build/
+
