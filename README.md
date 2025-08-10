@@ -57,19 +57,21 @@ You can run the API in Docker (recommended for parity between local and Cloud Ru
 docker build -t pedigreeproapi:latest .
 ```
 
-### Run
+### Run (Docker)
+The container listens on the environment variable PORT (defaults to 8080 when unset). Map 8080 locally:
 ```bash
-docker run -p 5001:5001 \
+docker run -p 8080:8080 \
+  -e PORT=8080 \
   -e MONGODB_URI="mongodb+srv://username:password@cluster.mongodb.net/database" \
   pedigreeproapi:latest
 ```
 
-Visit: http://localhost:5001/hello
+Visit: http://localhost:8080/hello
 
 ### Using a .env File
 Create a local `.env.runtime` (avoid naming it exactly `.env` if ignored) and load it:
 ```bash
-docker run --env-file .env.runtime -p 5001:5001 pedigreeproapi:latest
+docker run --env-file .env.runtime -p 8080:8080 pedigreeproapi:latest
 ```
 
 ## Deploying to Google Cloud Run
@@ -105,8 +107,7 @@ gcloud run deploy pedigreeproapi \
   --region us-central1 \
   --platform managed \
   --allow-unauthenticated \
-  --set-env-vars MONGODB_URI="mongodb+srv://username:password@cluster.mongodb.net/database" \
-  --port 5001
+  --set-env-vars MONGODB_URI="mongodb+srv://username:password@cluster.mongodb.net/database"
 ```
 7. Test the deployed service (replace SERVICE_URL):
 ```bash
@@ -132,8 +133,8 @@ Search for dogs with advanced filtering, pagination, and sorting capabilities.
   "name": "Fido",                       // Partial, case-insensitive match (optional)
   "isMale": true,                       // true for male, false for female (optional)
   "breed": "Labrador Retriever",        // Exact match (optional)
-  "startDateOfBirth": "2023-01-01",       // Start of date range YYYY-MM-DD (optional)
-  "endDateOfBirth": "2023-12-31",         // End of date range YYYY-MM-DD (optional)
+  "startDateOfBirth": "2023-01-01",       // Start of Date of Birth date range YYYY-MM-DD (optional)
+  "endDateOfBirth": "2023-12-31",         // End of Date of Birth date range YYYY-MM-DD (optional)
   "orderBy": "dogName",                 // Sort field: registrationNumber, dogName, dateOfBirth, breed (optional)
   "orderDirection": "asc",              // Sort direction: asc or desc (optional)
   "page": 1,                            // Page number (default: 1)
@@ -161,6 +162,13 @@ Search for dogs with advanced filtering, pagination, and sorting capabilities.
 curl -X POST http://localhost:5001/search \
   -H "Content-Type: application/json" \
   -d '{"name": "Moon Fairy", "breed": "Border Collie", "page": 1, "pageSize": 25}'
+
+Docker container example (port 8080):
+```bash
+curl -X POST http://localhost:8080/search \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Moon Fairy", "breed": "Border Collie", "page": 1, "pageSize": 25}'
+```
 ```
 
 ### GET /pedigree
@@ -204,6 +212,34 @@ Returns a hierarchical array representing the pedigree tree:
 **Example:**
 ```bash
 curl -X GET "http://localhost:5001/pedigree?_id=6856cc40f9a8bfcbe4b7b0b3"
+```
+
+### GET /dog
+
+Retrieve a dog's complete pedigree tree including ancestral lineage.
+
+**Query Parameters:**
+- `_id` (optional): MongoDB ObjectId of the dog
+- `id` (optional): MongoDB ObjectId of the dog
+- `_id` or `id` is required
+
+**Response:**
+Returns a hierarchical array representing the pedigree tree:
+```json
+{
+  "id": "dog_nameKey",               // Primary dog (root of tree)
+  "dogName": "Champion Dog",
+  "registrationNumber": "DN123",
+  "parentId": null,                  // Root has no parent
+  "sireNameKey": "sire_nameKey",
+  "damNameKey": "dam_nameKey"
+  // ... other dog properties
+}
+```
+
+**Example:**
+```bash
+curl -X GET "http://localhost:5001/dog?_id=6856cc40f9a8bfcbe4b7b0b3"
 ```
 
 ## Development

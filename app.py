@@ -171,6 +171,70 @@ def search_dogs():
     }), 200
 
 
+# GET request to retrieve a single dog by its MongoDB ObjectId
+#
+# Query parameters:
+# - _id: MongoDB ObjectId of the dog (required)
+# - id: Alternate id parameter (optional)
+#
+# Example URL:
+# /dog?_id=6856cc40f9a8bfcbe4b7b0b3
+# Returns the dog object
+# {
+#   "_id": {
+#     "$oid": "6856cc40f9a8bfcbe4b7b0b3"
+#   },
+#   "registrationNumber": "DN61764903",
+#   "sex": "female",
+#   "dogName": "Shannara's Dance O'the Moon Fairy",
+#   "dateOfBirth": 20200310,
+#   "breeders": "Jamie L Swanson",
+#   "breed": "Border Collie",
+#   "prefixTitles": [],
+#   "suffixTitles": [],
+#   "sire": "Molly's Dblm Levi",
+#   "dam": "Shannara Voyage O'the Blue Fairy",
+#   "nameKey": "shannarasdanceothemoonfairybordercollie",
+#   "registry": "HD",
+#   "color": "BLACK",
+#   "ofa": {
+#     "chicNumber": "",
+#     "tests": [
+#       {
+#         "ofaNumber": "BCO-EL6727F37-P-VPI",
+#         "result": "NORMAL",
+#         "dateTested": "04/18/2023",
+#         "isPublic": false
+#       }
+#     ]
+#   },
+#   "sireRegistrationNumber": "DN42316103",
+#   "damRegistrationNumber": "DN34126003",
+#   "damNameKey": "shannaravoyageothebluefairybordercollie",
+#   "sireNameKey": "mollysdblmlevibordercollie"
+# }
+
+# Sample curl command:
+# curl -X GET "http://localhost:5001/dog?_id=6856cc40f9a8bfcbe4b7b0b3"
+@app.route('/dog', methods=['GET'])
+@cross_origin()
+def get_dog():
+    # _id or id are valid
+    if '_id' not in request.args and 'id' not in request.args:
+        return jsonify({'message': 'Missing id parameter'}), 400
+
+    id = request.args.get('_id') or request.args.get('id')
+    dog = db["dogs"].find_one({"_id": ObjectId(id)})
+    if not dog:
+        return jsonify({'message': 'Dog not found'}), 404
+
+    dog['id'] = str(dog.get('_id'))
+    dog['dateOfBirth'] = dog.get('whelpDate', None)
+    dog.pop('whelpDate', None)
+    dog.pop('_id', None)  # Remove the ObjectId field for cleaner output
+    return jsonify(dog), 200
+
+
 # GET request to retrieve a dog's pedigree tree
 # Fetches a dog and its ancestral lineage (sire and dam lines) up to available generations
 # 
