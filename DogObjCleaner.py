@@ -2087,7 +2087,7 @@ class DogObjCleaner:
             "prefixTitles": True,
             "suffixTitles": True,
             "registrationNumber": True,
-            "whelpDate": True,
+            "dateOfBirth": True,
             "breeders": True,
             "sire": True,
             "dam": True,

@@ -40,9 +40,9 @@ def hello():
 #   "name": "Fido",                           // Partial, case-insensitive match
 #   "isMale": true,                           // true for male, false for female
 #   "breed": "Labrador Retriever",            // Exact match
-#   "startWhelpDate": "2023-01-01",           // Start of date range (YYYY-MM-DD)
-#   "endWhelpDate": "2023-12-31",             // End of date range (YYYY-MM-DD)
-#   "orderBy": "dogName",                     // Sort field: registrationNumber, dogName, whelpDate, breed
+#   "startDateOfBirth": "2023-01-01",           // Start of date range (YYYY-MM-DD)
+#   "endDateOfBirth": "2023-12-31",             // End of date range (YYYY-MM-DD)
+#   "orderBy": "dogName",                     // Sort field: registrationNumber, dogName, DateOfBirth, breed
 #   "orderDirection": "asc",                  // Sort direction: asc or desc
 #   "page": 1,                                // Page number (default: 1)
 #   "pageSize": 25                            // Results per page (default: 10, max: 1000)
@@ -102,20 +102,23 @@ def search_dogs():
     if 'breed' in data:
         query['breed'] = data['breed']
 
-    if 'startWhelpDate' in data and 'endWhelpDate' in data:
+    if 'startDateOfBirth' in data and 'endDateOfBirth' in data:
         query['whelpDate'] = {
-            '$gte': data['startWhelpDate'],
-            '$lte': data['endWhelpDate']
+            '$gte': data['startDateOfBirth'],
+            '$lte': data['endDateOfBirth']
         }
-    elif 'startWhelpDate' in data:
-        query['whelpDate'] = {'$gte': data['startWhelpDate']}
-    elif 'endWhelpDate' in data:
-        query['whelpDate'] = {'$lte': data['endWhelpDate']}
+    elif 'startDateOfBirth' in data:
+        query['whelpDate'] = {'$gte': data['startDateOfBirth']}
+    elif 'endDateOfBirth' in data:
+        query['whelpDate'] = {'$lte': data['endDateOfBirth']}
 
     if 'orderBy' in data:
         order_by = data['orderBy']
-        if order_by not in ['registrationNumber', 'dogName', 'whelpDate', 'breed']:
+        if order_by not in ['registrationNumber', 'name', 'dateOfBirth', 'whelpDate', 'breed']:
             return jsonify({'message': f'Invalid orderBy field: {order_by}'}), 400
+
+        if order_by == 'dateOfBirth':
+            order_by = 'whelpDate'
     else:
         order_by = 'registrationNumber'
 
@@ -147,6 +150,8 @@ def search_dogs():
     # Clean up the results
     for dog in dogs:
         dog['_id'] = str(dog.get('_id'))
+        dog['dateOfBirth'] = dog.get('whelpDate', None)
+        dog.pop('whelpDate', None)
     
     # Calculate pagination metadata
     total_pages = (total_count + page_size - 1) // page_size  # Ceiling division
@@ -318,6 +323,12 @@ def get_dogs():
             AddParentId(damDogObj, dog["nameKey"])
 
 
+    # Final cleanup - convert ObjectId to string and rename whelpDate to dateOfBirth
+    for dog in dogs:
+        dog['id'] = str(dog.get('_id'))
+        dog.pop('_id', None)
+        dog['dateOfBirth'] = dog.get('whelpDate', None)
+        dog.pop('whelpDate', None)
 
     # delete to ObjectId property
     print("Dogs found: ", len(dogs))
