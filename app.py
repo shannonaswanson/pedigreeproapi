@@ -239,7 +239,14 @@ def get_dog():
         dogObj["prefixTitles"] = []
         dogObj["suffixTitles"] = []
     else:
-        print(dogObj)
+        if "registrationNumber" in dogObj:
+            regNum = dogObj["registrationNumber"]
+            if len(regNum) > 1 and regNum[0] in "DHTNSRW" and regNum[1].isalpha():
+                # Valid AKC registration number
+                dogObj["registry"] = "AKC"
+            elif len(regNum) > 3 and regNum[:3] == "PAL":
+                dogObj["registry"] = "AKC"
+
         currentPrefixTitles = dogObj.get("prefixTitles", [])
         currentSuffixTitles = dogObj.get("suffixTitles", [])
         dogObj["prefixTitles"] = dogObjCleaner.distinctValidTitles(currentPrefixTitles, True)
