@@ -5,6 +5,8 @@ from DogObjCleaner import DogObjCleaner
 from BreedValidator import BreedValidator
 from bson import ObjectId
 import os
+import json
+import re
 
 flask_env = os.getenv("FLASK_ENV", "development")
 app = Flask(__name__)
@@ -215,7 +217,7 @@ def search_dogs():
 # }
 
 # Sample curl command:
-# curl -X GET "http://localhost:5001/dog?_id=6856cc40f9a8bfcbe4b7b0b3"
+# curl -X GET "http://localhost:5001/dog?_id=685737c9ba67eff2690fd471"
 @app.route('/dog', methods=['GET'])
 @cross_origin()
 def get_dog():
@@ -227,12 +229,28 @@ def get_dog():
     dog = db["dogs"].find_one({"_id": ObjectId(id)})
     if not dog:
         return jsonify({'message': 'Dog not found'}), 404
+    
+    dogObj = json.loads(json.dumps(dog, default=str))
+    _id = str(dog.get('_id'))
+    dogObj.pop('_id', None)
 
-    dog['id'] = str(dog.get('_id'))
-    dog['dateOfBirth'] = dog.get('whelpDate', None)
-    dog.pop('whelpDate', None)
-    dog.pop('_id', None)  # Remove the ObjectId field for cleaner output
-    return jsonify(dog), 200
+    if "registry" in dogObj:
+        # if there is a registry field then we can't trust the prefixTitles and suffixTitles so zero out the arrays
+        dogObj["prefixTitles"] = []
+        dogObj["suffixTitles"] = []
+    else:
+        print(dogObj)
+        currentPrefixTitles = dogObj.get("prefixTitles", [])
+        currentSuffixTitles = dogObj.get("suffixTitles", [])
+        dogObj["prefixTitles"] = dogObjCleaner.distinctValidTitles(currentPrefixTitles, True)
+        dogObj["suffixTitles"] = dogObjCleaner.distinctValidTitles(currentSuffixTitles, False)
+
+
+    dogObj['_id'] = _id
+    dogObj['dateOfBirth'] = dog.get('whelpDate', None)
+    dogObj.pop('whelpDate', None)
+
+    return jsonify(dogObj), 200
 
 
 # GET request to retrieve a dog's pedigree tree

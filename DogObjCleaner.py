@@ -183,9 +183,24 @@ class DogObjCleaner:
                 "isPrefix": False
             },
             {
-                "title": 'CD-V',
+                "title": 'CD-V#',
                 "description": 'Virtual Companion Dog',
                 "isPrefix": None
+            },
+            {
+                "title": 'FITS',
+                "description": 'Silver AKC Fit Dog',
+                "isPrefix": False
+            },
+            {
+                "title": 'VHMA',
+                "description": 'Virtual Home Manners Adult',
+                "isPrefix": False
+            },
+            {
+                "title": 'VHMP',
+                "description": 'Virtual Home Manners Puppy',
+                "isPrefix": False
             },
             {
                 "title": 'CDX',
@@ -1843,7 +1858,7 @@ class DogObjCleaner:
                 "isPrefix": False
             },
             {
-                "title": 'TT*',
+                "title": 'ATT',
                 "description": 'Temperament Test',
                 "isPrefix": False
             },
@@ -1937,14 +1952,97 @@ class DogObjCleaner:
                 "description": 'Agility FAST Excellent Preferred',
                 "isPrefix": False
             }]
-        
-        self.titleMap = {"prefix": {}, "suffix": {}}
+
+        self.titleMap = {
+            "prefix": {}, 
+            "suffix": {}, 
+            "startsWithPrefix": {}, 
+            "startsWithSuffix": {},
+            "endsWithNumberPrefix": {},
+            "endsWithNumberSuffix": {}
+        }
         for title in titles:
-            titlePrefix = title["title"][:4]
+            titleName = title["title"]
             if title["isPrefix"]:
-                self.titleMap["prefix"][titlePrefix] = True
+                if titleName[-1] == "#":
+                    titleName = titleName[:-1]
+                    self.titleMap["endsWithNumberPrefix"][titleName] = True
+
+                if titleName[-1] == "*":
+                    titleName = titleName[:-1]
+                    self.titleMap["startsWithPrefix"][titleName] = True
+                
+                self.titleMap["prefix"][titleName] = True
             else:
-                self.titleMap["suffix"][titlePrefix] = True
+                if titleName[-1] == "#":
+                    titleName = titleName[:-1]
+                    self.titleMap["endsWithNumberSuffix"][titleName] = True
+
+                if titleName[-1] == "*":
+                    titleName = titleName[:-1]
+                    self.titleMap["startsWithSuffix"][titleName] = True
+
+                self.titleMap["suffix"][titleName] = True
+
+    def isTitleEndWithNumberValid(self, title, isPrefix):
+        if title[-1].isdigit():
+            title = title[:-1]
+        if isPrefix:
+            return title in self.titleMap["endsWithNumberPrefix"]
+        else:
+            return title in self.titleMap["endsWithNumberSuffix"]
+
+    def isTitleValid(self, title, isPrefix):
+        if isPrefix:
+            if title in self.titleMap["prefix"]:
+                return True
+            
+            # remove the last position if its a number
+            if title[-1].isdigit():
+                title = title[:-1]
+            
+            if title in self.titleMap["prefix"]:
+                return True
+
+            for startsWith in self.titleMap["startsWithPrefix"]:
+                if title.startswith(startsWith):
+                    return True
+                
+            return False
+        else:
+            if title in self.titleMap["suffix"]:
+                return True
+            
+            # remove the last position if its a number
+            if title[-1].isdigit():
+                title = title[:-1]
+            
+            if title in self.titleMap["suffix"]:
+                return True
+
+            for startsWith in self.titleMap["startsWithSuffix"]:
+                if title.startswith(startsWith):
+                    return True
+                
+            return False
+
+    def distinctValidTitles(self, titles, isPrefix):
+        # The trick here is RM and RM2 are both valid but if they appear together we remove the base (RM).
+        # Use existing helpers instead of custom regex parsing.
+        valid_titles = []
+        bases_with_numbered = set()
+
+        for title in titles:
+            if not self.isTitleValid(title, isPrefix):
+                continue
+            valid_titles.append(title)
+            # If the title ends with a number AND that numbered variant pattern is valid, record its base.
+            if title and title[-1].isdigit() and self.isTitleEndWithNumberValid(title, isPrefix):
+                bases_with_numbered.add(title[:-1])
+
+        # Filter out plain bases when a numbered variant exists.
+        result = [t for t in valid_titles if not (t in bases_with_numbered and (len(t) == 0 or not t[-1].isdigit()))]
+        return result
 
     def titlecase(self, input):
         return re.sub(
