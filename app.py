@@ -87,8 +87,16 @@ def search_dogs():
         page_size = default_page_size
 
     query = {}
-    if 'registrationNumber' in data:
-        query['registrationNumber'] = data['registrationNumber']
+
+    if 'registrationNumber' in data and 'excludeRegistrationNumbers' in data:
+        # Contains (case-insensitive) match on registrationNumber while excluding specific exact numbers
+        rn_pattern = re.escape(data['registrationNumber'])
+        query['registrationNumber'] = {'$regex': rn_pattern, '$options': 'i', '$nin': data['excludeRegistrationNumbers']}
+    elif 'excludeRegistrationNumbers' in data:
+        query['registrationNumber'] = {'$nin': data['excludeRegistrationNumbers']}
+    elif 'registrationNumber' in data:
+        rn_pattern = re.escape(data['registrationNumber'])
+        query['registrationNumber'] = {'$regex': rn_pattern, '$options': 'i'}
     
     if 'name' in data:
         # need to change this to do a contains search, case insensitive
@@ -147,8 +155,8 @@ def search_dogs():
     dogs = list(dogCollection.find(query).sort(order_by, sort_order).skip(skip).limit(page_size))
 
     if not dogs:
-        return jsonify({'message': 'No dogs found matching the criteria'}), 404
-    
+        return jsonify({'dogs': []}), 200
+
     # Clean up the results
     for dog in dogs:
         dog['_id'] = str(dog.get('_id'))
@@ -233,19 +241,17 @@ def get_dog():
     dogObj = json.loads(json.dumps(dog, default=str))
     _id = str(dog.get('_id'))
     dogObj.pop('_id', None)
+    dogObj.pop("registry")
 
-    if "registry" in dogObj:
-        # if there is a registry field then we can't trust the prefixTitles and suffixTitles so zero out the arrays
-        dogObj["prefixTitles"] = []
-        dogObj["suffixTitles"] = []
-    else:
-        if "registrationNumber" in dogObj:
-            regNum = dogObj["registrationNumber"]
-            if len(regNum) > 1 and regNum[0] in "DHTNSRW" and regNum[1].isalpha():
-                # Valid AKC registration number
-                dogObj["registry"] = "AKC"
-            elif len(regNum) > 3 and regNum[:3] == "PAL":
-                dogObj["registry"] = "AKC"
+    if "registrationNumber" in dogObj:
+        regNum = dogObj["registrationNumber"]
+        if len(regNum) > 1 and regNum[0] in "DHTNSRW" and regNum[1].isalpha():
+            # Valid AKC registration number
+            dogObj["registry"] = "AKC"
+        elif len(regNum) > 3 and regNum[:3] == "PAL":
+            dogObj["registry"] = "AKC"
+        else:
+            dogObj["registry"] = ""
 
         currentPrefixTitles = dogObj.get("prefixTitles", [])
         currentSuffixTitles = dogObj.get("suffixTitles", [])
