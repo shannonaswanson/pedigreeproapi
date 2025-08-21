@@ -22,6 +22,36 @@ dogCollection = db["dogs"]
 
 dogObjCleaner = DogObjCleaner(BreedValidator())
 
+# ---------------- Parent Helper Utilities ----------------
+def _clean_parent(parentObj):
+    """Return sanitized copy of a parent dog document or None."""
+    if not parentObj:
+        return None
+    parentObjCopy = json.loads(json.dumps(parentObj, default=str))
+    parentObjCopy['_id'] = str(parentObjCopy.get('_id'))
+    parentObjCopy['dateOfBirth'] = parentObjCopy.get('whelpDate', None)
+    parentObjCopy.pop('whelpDate', None)
+    return parentObjCopy
+
+def _lookup_parent(source_obj, reg_key, name_key_field):
+    """Lookup parent using registration number (preferred) then nameKey.
+    If multiple records match registration number and a nameKey is provided, prefer that exact nameKey."""
+    reg_number = source_obj.get(reg_key)
+    provided_name_key = source_obj.get(name_key_field)
+    parent = None
+    if reg_number:
+        matches = list(dogCollection.find({'registrationNumber': reg_number}))
+        if matches:
+            if provided_name_key:
+                for match in matches:
+                    if match.get('nameKey') == provided_name_key:
+                        parent = match
+                        break
+    if parent is None and provided_name_key:
+        parent = dogCollection.find_one({'nameKey': provided_name_key})
+    return _clean_parent(parent)
+# ----------------------------------------------------------
+
 # create a sample curl command to test the API
 # curl -X GET http://localhost:5000/hello
 
@@ -241,7 +271,9 @@ def get_dog():
     dogObj = json.loads(json.dumps(dog, default=str))
     _id = str(dog.get('_id'))
     dogObj.pop('_id', None)
-    dogObj.pop("registry")
+
+    if "registry" in dogObj:
+        dogObj.pop("registry")
 
     if "registrationNumber" in dogObj:
         regNum = dogObj["registrationNumber"]
@@ -262,6 +294,13 @@ def get_dog():
     dogObj['_id'] = _id
     dogObj['dateOfBirth'] = dog.get('whelpDate', None)
     dogObj.pop('whelpDate', None)
+
+    
+    # Parent references
+    if ('sireRegistrationNumber' in dogObj or 'sireNameKey' in dogObj) and 'sireObj' not in dogObj:
+        dogObj['sireObj'] = _lookup_parent(dogObj, 'sireRegistrationNumber', 'sireNameKey')
+    if ('damRegistrationNumber' in dogObj or 'damNameKey' in dogObj) and 'damObj' not in dogObj:
+        dogObj['damObj'] = _lookup_parent(dogObj, 'damRegistrationNumber', 'damNameKey')
 
     return jsonify(dogObj), 200
 
@@ -328,9 +367,14 @@ def get_dogs():
 
     if 'sire' in dog and dog['sire'] is not None:
         dog['sireNameKey'] = dogObjCleaner.getNameKey(dog["sire"], dog['breed'])
-    
     if 'dam' in dog and dog['dam'] is not None:
         dog['damNameKey'] = dogObjCleaner.getNameKey(dog["dam"], dog['breed'])
+
+    # Attach parent objects for root dog
+    if ('sireRegistrationNumber' in dog or 'sireNameKey' in dog) and 'sireObj' not in dog:
+        dog['sireObj'] = _lookup_parent(dog, 'sireRegistrationNumber', 'sireNameKey')
+    if ('damRegistrationNumber' in dog or 'damNameKey' in dog) and 'damObj' not in dog:
+        dog['damObj'] = _lookup_parent(dog, 'damRegistrationNumber', 'damNameKey')
 
     dogs.append(dog)
 
